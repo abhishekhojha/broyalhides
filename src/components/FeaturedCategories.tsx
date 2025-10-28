@@ -56,7 +56,7 @@ const categories = [
 
 const FeaturedCategories = () => (
   <section className="w-full max-w-7xl mx-auto py-16 px-4 md:px-8">
-    <h2 className="text-3xl md:text-5xl font-semibold text-center mb-10 font-serif text-primary drop-shadow-lg tracking-tight">
+    <h2 className="text-3xl md:text-5xl text-center mb-10 font-serif text-primary font-semibold">
       Featured Categories
     </h2>
     <div className="flex flex-col md:flex-row justify-center items-stretch">

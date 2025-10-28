@@ -127,6 +127,9 @@
   font-display: swap; /* Helps prevent blocking text rendering */
 }
 
-body {
+h1, h2, h3, h4, h5, h6 {
   font-family: MyFont, sans-serif;
+}
+.MyFont {
+  font-family: MyFont, sans-serif; /* Use the CSS variable */
 }

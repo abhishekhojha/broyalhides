@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export const HeaderHero = () => (
   <header className="relative w-full h-[100vh] flex items-center justify-center overflow-hidden">
     <video
@@ -17,12 +19,12 @@ export const HeaderHero = () => (
         distinction.
       </p>
       {/* Call to action button */}
-      <a
+      <Link
         href="#explore"
         className="inline-block px-8 py-3 rounded-md bg-white/90 text-black font-semibold shadow-lg hover:bg-white transition-all duration-200 animate-fade-in-up delay-300"
       >
         Explore Now
-      </a>
+      </Link>
       {/* Animated scroll indicator */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center z-30 animate-bounce">
         <span
