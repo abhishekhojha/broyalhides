@@ -13,11 +13,11 @@ export const HeaderHero = () => (
     {/* Gradient overlay */}
     <div className="absolute top-0 left-0 w-full h-full z-10 bg-black/80" />
     <div className="relative z-20 flex flex-col items-center justify-center w-full h-full text-center px-4">
-      <p className="text-2xl md:text-4xl text-white/80 max-w-3xl animate-fade-in-up delay-150 mb-8 font-serif">
+      <p className="text-2xl md:text-5xl text-white/80 max-w-3xl animate-fade-in-up delay-150 mb-2 font-serif">
         Elevate your legacy.
-        <br className="hidden md:inline" /> Experience the new era of
-        distinction.
       </p>
+      <p className="text-2xl md:text-4xl text-white/60 max-w-3xl animate-fade-in-up delay-150 mb-8 font-serif">Experience the new era of
+        distinction.</p>
       {/* Call to action button */}
       <Link
         href="#explore"
