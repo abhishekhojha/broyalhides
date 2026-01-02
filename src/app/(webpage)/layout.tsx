@@ -1,15 +1,19 @@
 import Footer from "@/components/Footer";
-import Navbar from "@/components/MegaMenuNavbar"; // Update the path if necessary
-export default function RootLayout({
+import MegaMenuNavbar from "@/components/MegaMenuNavbar"; // Update the path if necessary
+import { StoreProvider } from "../StoreProvider";
+import { Toaster } from "sonner";
+
+export default function WebpageLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <>
-      <Navbar />
-      <main className="">{children}</main>
+    <StoreProvider>
+      <Toaster position="bottom-center" richColors />
+      <MegaMenuNavbar />
+      {children}
       <Footer />
-    </>
+    </StoreProvider>
   );
 }
