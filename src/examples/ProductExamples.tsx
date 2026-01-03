@@ -1,7 +1,13 @@
 // Example: Using Redux Products API in your components
 // This file demonstrates how to integrate the Products API into your pages
 
-import { useGetProductsQuery } from "@/store/slices/productsSlice";
+import { useState } from "react";
+import {
+  useGetProductsQuery,
+  useGetProductByIdQuery,
+  useGetProductVariantsQuery,
+  useCreateProductMutation,
+} from "@/store/slices/productsSlice";
 import type { Product } from "@/types/product";
 
 /**
@@ -48,7 +54,12 @@ export function SimpleProductList() {
  */
 export function ShopPageExample() {
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<{
+    search: string;
+    category: string;
+    minPrice: number | undefined;
+    maxPrice: number | undefined;
+  }>({
     search: "",
     category: "",
     minPrice: undefined,
