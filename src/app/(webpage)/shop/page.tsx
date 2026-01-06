@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Filter from "./components/Filter";
+import Filter, { FilterState } from "./components/Filter";
 import { useGetProductsQuery } from "@/store/slices/productsSlice";
 import {
   useAddToCartMutation,
@@ -25,16 +26,29 @@ import { toast } from "sonner";
 
 export default function ShopPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [favorites, setFavorites] = useState(new Set<string>());
-  const [addingToCart, setAddingToCart] = useState<string | null>(null); // Track which product is being added
+  const [addingToCart, setAddingToCart] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({
+
+  // Initialize filters from URL params (for mega menu category links)
+  const [filters, setFilters] = useState<FilterState>({
     search: "",
-    category: "",
-    minPrice: undefined as number | undefined,
-    maxPrice: undefined as number | undefined,
+    category: searchParams.get("category") || "",
+    brand: "",
+    minPrice: undefined,
+    maxPrice: undefined,
   });
+
+  // Update filters when URL params change (mega menu navigation)
+  useEffect(() => {
+    const categoryFromUrl = searchParams.get("category");
+    if (categoryFromUrl && categoryFromUrl !== filters.category) {
+      setFilters((prev) => ({ ...prev, category: categoryFromUrl }));
+      setPage(1);
+    }
+  }, [searchParams]);
 
   // Check if user is logged in
   useEffect(() => {
@@ -44,20 +58,38 @@ export default function ShopPage() {
     }
   }, []);
 
-  // Fetch products from backend using Redux
-  const { data, isLoading, error } = useGetProductsQuery({
-    ...filters,
+  // Build query params for API
+  const queryParams = {
+    ...(filters.search && { search: filters.search }),
+    ...(filters.category && { category: filters.category }),
+    ...(filters.brand && { brand: filters.brand }),
+    ...(filters.minPrice !== undefined && { minPrice: filters.minPrice }),
+    ...(filters.maxPrice !== undefined && { maxPrice: filters.maxPrice }),
     page,
     limit: 12,
-  });
+  };
+
+  // Fetch products from backend using Redux
+  const { data, isLoading, error } = useGetProductsQuery(queryParams);
 
   // Fetch cart data to check if items are already in cart
   const { data: cartData } = useGetCartQuery(undefined, {
-    skip: !isLoggedIn, // Only fetch if logged in
+    skip: !isLoggedIn,
   });
 
   // Add to cart mutation
   const [addToCart] = useAddToCartMutation();
+
+  // Handle filter changes
+  const handleFiltersChange = useCallback((newFilters: FilterState) => {
+    setFilters(newFilters);
+    setPage(1); // Reset to first page when filters change
+  }, []);
+
+  // Handle filter apply (close sheet callback)
+  const handleFilterApply = useCallback(() => {
+    // Filters already applied via handleFiltersChange
+  }, []);
 
   // Check if product is already in cart
   const isProductInCart = (productId: string) => {
@@ -70,7 +102,7 @@ export default function ShopPage() {
   };
 
   const handleAddToCart = async (productId: string) => {
-    setAddingToCart(productId); // Set loading for this specific product
+    setAddingToCart(productId);
     try {
       await addToCart({
         product: productId,
@@ -78,7 +110,6 @@ export default function ShopPage() {
         quantity: 1,
       }).unwrap();
 
-      // Show success feedback
       toast.success("Added to cart successfully!");
     } catch (error: any) {
       console.error("Failed to add to cart:", error);
@@ -86,7 +117,7 @@ export default function ShopPage() {
         error?.data?.message || "Failed to add to cart. Please try again."
       );
     } finally {
-      setAddingToCart(null); // Clear loading state
+      setAddingToCart(null);
     }
   };
 
@@ -117,6 +148,14 @@ export default function ShopPage() {
     return category?.name || "Product";
   };
 
+  // Check if any filters are active
+  const hasActiveFilters =
+    filters.search ||
+    filters.category ||
+    filters.brand ||
+    filters.minPrice !== undefined ||
+    filters.maxPrice !== undefined;
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100 text-gray-900">
       {/* Hero Section */}
@@ -140,9 +179,14 @@ export default function ShopPage() {
             <h2 className="text-3xl font-bold">Featured Collection</h2>
             <p className="text-gray-500 mt-1">
               {data ? `${data.total} products found` : "Loading products..."}
+              {hasActiveFilters && " (filtered)"}
             </p>
           </div>
-          <Filter />
+          <Filter
+            filters={filters}
+            onFiltersChange={handleFiltersChange}
+            onApply={handleFilterApply}
+          />
         </div>
 
         {/* Loading State */}
@@ -188,150 +232,161 @@ export default function ShopPage() {
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {data.products.map((product) => (
-                <Card
-                  key={product._id}
-                  className="group relative overflow-hidden border border-gray-100 hover:border-gray-300 bg-white shadow-sm hover:shadow-xl transition-all duration-500 rounded-lg py-0!"
-                >
-                  {/* Product Image */}
-                  <div className="relative overflow-hidden">
-                    <img
-                      src={getProductImage(product)}
-                      alt={product.title}
-                      className="w-full h-80 object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "/images/placeholder.png";
-                      }}
-                    />
+                <Link key={product._id} href={`/shop/${product._id}`}>
+                  <Card className="group relative overflow-hidden border border-gray-100 hover:border-gray-300 bg-white shadow-sm hover:shadow-xl transition-all duration-500 rounded-lg py-0! cursor-pointer">
+                    {/* Product Image */}
+                    <div className="relative overflow-hidden">
+                      <img
+                        src={getProductImage(product)}
+                        alt={product.title}
+                        className="w-full h-80 object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = "/images/placeholder.png";
+                        }}
+                      />
 
-                    {/* Subtle overlay fade on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      {/* Subtle overlay fade on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                    {/* Product badge for discounted items */}
-                    {product.discountPrice && (
-                      <Badge className="absolute top-4 left-4 bg-black text-white border-none shadow-md text-xs font-medium tracking-wide rounded-md px-2.5 py-1">
-                        Sale
-                      </Badge>
-                    )}
+                      {/* Product badge for discounted items */}
+                      {product.discountPrice && (
+                        <Badge className="absolute top-4 left-4 bg-black text-white border-none shadow-md text-xs font-medium tracking-wide rounded-md px-2.5 py-1">
+                          Sale
+                        </Badge>
+                      )}
 
-                    {/* Low stock badge */}
-                    {product.stock < 10 && product.stock > 0 && (
-                      <Badge className="absolute top-4 left-4 bg-orange-600 text-white border-none shadow-md text-xs font-medium tracking-wide rounded-md px-2.5 py-1">
-                        Only {product.stock} left
-                      </Badge>
-                    )}
+                      {/* Low stock badge */}
+                      {product.stock < 10 && product.stock > 0 && (
+                        <Badge className="absolute top-4 left-4 bg-orange-600 text-white border-none shadow-md text-xs font-medium tracking-wide rounded-md px-2.5 py-1">
+                          Only {product.stock} left
+                        </Badge>
+                      )}
 
-                    {/* Out of stock badge */}
-                    {product.stock === 0 && (
-                      <Badge className="absolute top-4 left-4 bg-red-600 text-white border-none shadow-md text-xs font-medium tracking-wide rounded-md px-2.5 py-1">
-                        Out of Stock
-                      </Badge>
-                    )}
+                      {/* Out of stock badge */}
+                      {product.stock === 0 && (
+                        <Badge className="absolute top-4 left-4 bg-red-600 text-white border-none shadow-md text-xs font-medium tracking-wide rounded-md px-2.5 py-1">
+                          Out of Stock
+                        </Badge>
+                      )}
 
-                    {/* Favorite button - Only show when logged in */}
-                    {isLoggedIn && (
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className={`absolute top-4 right-4 rounded-full shadow-md backdrop-blur-sm border transition-all duration-300 cursor-pointer ${
-                          favorites.has(product._id)
-                            ? "bg-black text-white hover:bg-gray-900"
-                            : "bg-white/80 text-gray-700 hover:bg-gray-200"
-                        }`}
-                        onClick={() => toggleFavorite(product._id)}
-                      >
-                        <Heart
-                          className={`w-4 h-4 transition-colors ${
-                            favorites.has(product._id) ? "fill-current" : ""
+                      {/* Favorite button - Only show when logged in */}
+                      {isLoggedIn && (
+                        <Button
+                          size="icon"
+                          variant="secondary"
+                          className={`absolute top-4 right-4 rounded-full shadow-md backdrop-blur-sm border transition-all duration-300 cursor-pointer ${
+                            favorites.has(product._id)
+                              ? "bg-black text-white hover:bg-gray-900"
+                              : "bg-white/80 text-gray-700 hover:bg-gray-200"
                           }`}
-                        />
-                      </Button>
-                    )}
-                  </div>
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleFavorite(product._id);
+                          }}
+                        >
+                          <Heart
+                            className={`w-4 h-4 transition-colors ${
+                              favorites.has(product._id) ? "fill-current" : ""
+                            }`}
+                          />
+                        </Button>
+                      )}
+                    </div>
 
-                  {/* Product Info */}
-                  <div className="p-5">
-                    <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-1 font-medium">
-                      {getCategoryName(product.category)}
-                    </p>
-                    <h3 className="text-[1.05rem] font-semibold leading-snug text-gray-900 group-hover:text-black transition-colors mb-2">
-                      {product.title}
-                    </h3>
-
-                    {/* Excerpt */}
-                    {product.excerpt && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-1">
-                        {product.excerpt}
+                    {/* Product Info */}
+                    <div className="p-5">
+                      <p className="text-[11px] uppercase tracking-widest text-gray-500 mb-1 font-medium">
+                        {getCategoryName(product.category)}
                       </p>
-                    )}
+                      <h3 className="text-[1.05rem] font-semibold leading-snug text-gray-900 group-hover:text-black transition-colors mb-2">
+                        {product.title}
+                      </h3>
 
-                    {/* Price & CTA */}
-                    <div className="flex items-center justify-between mt-4">
-                      <div className="flex flex-col">
-                        {product.discountPrice ? (
-                          <>
+                      {/* Excerpt */}
+                      {product.excerpt && (
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-1">
+                          {product.excerpt}
+                        </p>
+                      )}
+
+                      {/* Price & CTA */}
+                      <div className="flex items-center justify-between mt-4">
+                        <div className="flex flex-col">
+                          {product.discountPrice ? (
+                            <>
+                              <span className="text-lg font-semibold text-gray-900 tracking-tight">
+                                {formatPrice(product.discountPrice)}
+                              </span>
+                              <span className="text-sm text-gray-500 line-through">
+                                {formatPrice(product.price)}
+                              </span>
+                            </>
+                          ) : (
                             <span className="text-lg font-semibold text-gray-900 tracking-tight">
-                              {formatPrice(product.discountPrice)}
-                            </span>
-                            <span className="text-sm text-gray-500 line-through">
                               {formatPrice(product.price)}
                             </span>
-                          </>
-                        ) : (
-                          <span className="text-lg font-semibold text-gray-900 tracking-tight">
-                            {formatPrice(product.price)}
-                          </span>
-                        )}
-                      </div>
+                          )}
+                        </div>
 
-                      {/* Show Add to Cart if logged in, Login button if not */}
-                      {isLoggedIn ? (
-                        isProductInCart(product._id) ? (
-                          <Link href="/cart">
+                        {/* Show Add to Cart if logged in, Login button if not */}
+                        {isLoggedIn ? (
+                          isProductInCart(product._id) ? (
                             <Button
                               size="sm"
                               variant="outline"
                               className="border-green-600 text-green-600 hover:bg-green-50 transition-all rounded-sm px-4 font-medium cursor-pointer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                router.push("/cart");
+                              }}
                             >
                               <ShoppingCart className="w-4 h-4 mr-1" />
                               View Cart
                             </Button>
-                          </Link>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                handleAddToCart(product._id);
+                              }}
+                              disabled={
+                                product.stock === 0 ||
+                                addingToCart === product._id
+                              }
+                              className="bg-black text-white hover:bg-gray-900 transition-all rounded-sm px-4 font-medium cursor-pointer disabled:opacity-50"
+                            >
+                              {addingToCart === product._id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>
+                                  <ShoppingCart className="w-4 h-4" />
+                                  <Plus />
+                                </>
+                              )}
+                            </Button>
+                          )
                         ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => handleAddToCart(product._id)}
-                            disabled={
-                              product.stock === 0 ||
-                              addingToCart === product._id
-                            }
-                            className="bg-black text-white hover:bg-gray-900 transition-all rounded-sm px-4 font-medium cursor-pointer disabled:opacity-50"
-                          >
-                            {addingToCart === product._id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>
-                                <ShoppingCart className="w-4 h-4" />
-                                <Plus />
-                              </>
-                            )}
-                          </Button>
-                        )
-                      ) : (
-                        <Link href="/login">
                           <Button
                             size="sm"
                             variant="outline"
                             className="border-black text-black hover:bg-black hover:text-white transition-all rounded-sm px-3 font-medium cursor-pointer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              router.push("/login");
+                            }}
                           >
                             <LogIn className="w-4 h-4 mr-1" />
                             Login to Buy
                           </Button>
-                        </Link>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               ))}
             </div>
 
