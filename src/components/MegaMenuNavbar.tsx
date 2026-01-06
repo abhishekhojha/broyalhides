@@ -43,7 +43,7 @@ const Navbar = () => {
   const [activeChild, setActiveChild] = useState<string | null>(null);
   const megaMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const navItems = ["Shop", "Men's", "Women's", "Tabi's", "About", "Contact"];
+  const navItems = ["Shop",  "About", "Contact"];
 
   // Check if user is logged in
   useEffect(() => {
