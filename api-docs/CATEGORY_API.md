@@ -6,7 +6,7 @@ Category endpoints are prefixed with `/api/categories`
 
 ## Authentication & Authorization
 
-- **Public Routes**: `GET /api/categories` and `GET /api/categories/:id` are publicly accessible
+- **Public Routes**: `GET /api/categories`, `GET /api/categories/:id`, and `GET /api/categories/slug/:slug` are publicly accessible
 - **Protected Routes**: All other routes require:
   - Authentication (`requireAuth` middleware)
   - `MANAGE_CATEGORIES` permission (`requirePermission` middleware)
@@ -341,7 +341,82 @@ _Category Not Found (404):_
 
 ---
 
-### 4. Update Category
+### 4. Get Category by Slug
+
+Retrieve a single category by its URL-friendly slug with populated parent information.
+
+**Endpoint:** `GET /api/categories/slug/:slug`
+
+**Authentication:** Not required
+
+**URL Parameters:**
+
+- `slug` (string, required): URL-friendly category identifier (lowercase, alphanumeric, hyphens)
+
+**Example Request:**
+
+```
+GET /api/categories/slug/smartphones
+```
+
+**Success Response (200):**
+
+```json
+{
+  "category": {
+    "_id": "507f1f77bcf86cd799439012",
+    "name": "Smartphones",
+    "slug": "smartphones",
+    "parent": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Electronics",
+      "slug": "electronics"
+    },
+    "description": "Mobile phones and accessories",
+    "image": "https://example.com/images/smartphones.jpg",
+    "status": "active",
+    "createdAt": "2026-01-02T11:40:00.000Z",
+    "updatedAt": "2026-01-02T11:40:00.000Z"
+  }
+}
+```
+
+**Example Response (Top-Level Category):**
+
+```json
+{
+  "category": {
+    "_id": "507f1f77bcf86cd799439011",
+    "name": "Electronics",
+    "slug": "electronics",
+    "parent": null,
+    "description": "Electronic devices and accessories",
+    "image": "https://example.com/images/electronics.jpg",
+    "status": "active",
+    "createdAt": "2026-01-01T10:00:00.000Z",
+    "updatedAt": "2026-01-01T10:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+_Category Not Found (404):_
+
+```json
+{
+  "message": "Category not found"
+}
+```
+
+**Notes:**
+
+- Use this endpoint for SEO-friendly URLs (e.g., `/shop/electronics` instead of `/shop/507f1f77bcf86cd799439011`)
+- Slug must match exactly (case-sensitive, lowercase)
+
+---
+
+### 5. Update Category
 
 Update an existing category's details.
 
@@ -487,7 +562,7 @@ _Slug Already Exists (409):_
 
 ---
 
-### 5. Delete Category
+### 6. Delete Category
 
 Delete a category from the system.
 

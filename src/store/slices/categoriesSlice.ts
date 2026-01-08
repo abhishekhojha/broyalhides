@@ -44,6 +44,13 @@ export const categoriesApi = createApi({
       providesTags: (result, error, id) => [{ type: "Category", id }],
     }),
 
+    // 3. Get Category by Slug
+    getCategoryBySlug: builder.query<{ category: Category }, string>({
+      query: (slug) => `/slug/${slug}`,
+      providesTags: (result) =>
+        result ? [{ type: "Category", id: result.category._id }] : [],
+    }),
+
     // 3. Create Category (Protected - MANAGE_CATEGORIES)
     createCategory: builder.mutation<
       { message: string; category: Category },
@@ -87,6 +94,7 @@ export const categoriesApi = createApi({
 export const {
   useGetCategoriesQuery,
   useGetCategoryByIdQuery,
+  useGetCategoryBySlugQuery,
   useCreateCategoryMutation,
   useUpdateCategoryMutation,
   useDeleteCategoryMutation,

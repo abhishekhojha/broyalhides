@@ -6,7 +6,7 @@ All product API endpoints are prefixed with `/api/products`
 
 ## Authentication & Authorization
 
-- **Public Routes**: `GET /api/products` and `GET /api/products/:id` are publicly accessible
+- **Public Routes**: `GET /api/products`, `GET /api/products/:id`, and `GET /api/products/slug/:slug` are publicly accessible
 - **Protected Routes**: All other routes require:
   - Authentication (`requireAuth` middleware)
   - `MANAGE_PRODUCTS` permission (`requirePermission` middleware)
@@ -297,7 +297,80 @@ GET /api/products/507f1f77bcf86cd799439012
 
 ---
 
-### 4. Update Product
+### 4. Get Product by Slug
+
+Retrieve a single product by its URL-friendly slug.
+
+**Endpoint:** `GET /api/products/slug/:slug`
+
+**Authentication:** Not required
+
+**URL Parameters:**
+
+- `slug` (string, required): URL-friendly product identifier
+
+**Example Request:**
+
+```
+GET /api/products/slug/premium-leather-wallet
+```
+
+**Success Response (200):**
+
+```json
+{
+  "product": {
+    "_id": "507f1f77bcf86cd799439012",
+    "title": "Premium Leather Wallet",
+    "excerpt": "Handcrafted genuine leather wallet",
+    "slug": "premium-leather-wallet",
+    "description": "A beautifully crafted wallet made from premium leather...",
+    "price": 4999,
+    "discountPrice": 3999,
+    "stock": 50,
+    "images": [
+      {
+        "url": "https://example.com/images/wallet-front.jpg",
+        "isPrimary": true
+      }
+    ],
+    "category": {
+      "_id": "507f1f77bcf86cd799439011",
+      "name": "Accessories",
+      "slug": "accessories"
+    },
+    "brand": "LeatherCraft",
+    "SKU": "WALLET-001",
+    "variants": [],
+    "attributes": [
+      {
+        "key": "Material",
+        "value": "Genuine Leather"
+      }
+    ],
+    "createdAt": "2026-01-02T11:25:55.000Z",
+    "updatedAt": "2026-01-02T11:25:55.000Z"
+  }
+}
+```
+
+**Error Response (404):**
+
+```json
+{
+  "error": "Product not found"
+}
+```
+
+**Notes:**
+
+- Use this endpoint for SEO-friendly URLs (e.g., `/products/premium-leather-wallet`)
+- Slug must match exactly (case-sensitive, lowercase)
+- Returns the same populated data as Get Product by ID
+
+---
+
+### 5. Update Product
 
 Update an existing product.
 
@@ -345,7 +418,7 @@ Update an existing product.
 
 ---
 
-### 5. Delete Product
+### 6. Delete Product
 
 Delete a product and all its variants.
 
@@ -379,7 +452,7 @@ Delete a product and all its variants.
 
 ## 🎨 Product Variant Endpoints
 
-### 6. Add Variant to Product
+### 7. Add Variant to Product
 
 Create a new variant for an existing product.
 
@@ -466,7 +539,7 @@ Create a new variant for an existing product.
 
 ---
 
-### 7. Get All Variants for a Product
+### 8. Get All Variants for a Product
 
 Retrieve all variants of a specific product.
 
@@ -535,7 +608,7 @@ GET /api/products/507f1f77bcf86cd799439012/variants
 
 ---
 
-### 8. Get Variant by ID
+### 9. Get Variant by ID
 
 Retrieve a single variant by its ID.
 
@@ -587,7 +660,7 @@ GET /api/products/variant/507f1f77bcf86cd799439013
 
 ---
 
-### 9. Update Variant
+### 10. Update Variant
 
 Update an existing variant.
 
@@ -645,7 +718,7 @@ Update an existing variant.
 
 ---
 
-### 10. Delete Variant
+### 11. Delete Variant
 
 Delete a variant and remove its reference from the parent product.
 

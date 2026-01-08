@@ -43,7 +43,7 @@ const Navbar = () => {
   const [activeChild, setActiveChild] = useState<string | null>(null);
   const megaMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const navItems = ["Shop",  "About", "Contact"];
+  const navItems = ["Shop", "About", "Contact"];
 
   // Check if user is logged in
   useEffect(() => {
@@ -118,8 +118,8 @@ const Navbar = () => {
     return child?.children || [];
   }, [activeParentChildren, activeChild]);
 
-  const cartItemCount =
-    cartData?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  // Count unique products in cart (not total quantity)
+  const cartItemCount = cartData?.items?.length || 0;
 
   const handleLogout = () => {
     if (typeof window !== "undefined") {
@@ -162,11 +162,11 @@ const Navbar = () => {
   }, []);
 
   const handleCategoryClick = useCallback(
-    (categoryId: string) => {
+    (slug: string) => {
       setIsMegaMenuOpen(false);
       setActiveParent(null);
       setActiveChild(null);
-      router.push(`/shop?category=${categoryId}`);
+      router.push(`/shop?category=${slug}`);
     },
     [router]
   );
@@ -205,7 +205,11 @@ const Navbar = () => {
                     onMouseLeave={handleMegaMenuLeave}
                   >
                     <button
-                      className={`text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-md font-semibold py-2 ${
+                      onClick={() => {
+                        setIsMegaMenuOpen(false);
+                        router.push("/shop");
+                      }}
+                      className={`text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-md font-semibold py-2 cursor-pointer ${
                         isMegaMenuOpen ? "text-navbar-text-hover" : ""
                       }`}
                     >
@@ -414,7 +418,7 @@ const Navbar = () => {
                 <button
                   key={parent._id}
                   onMouseEnter={() => handleParentHover(parent._id)}
-                  onClick={() => handleCategoryClick(parent._id)}
+                  onClick={() => handleCategoryClick(parent.slug)}
                   className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${
                     activeParent === parent._id
                       ? "bg-gray-100 text-gray-900"
@@ -460,7 +464,7 @@ const Navbar = () => {
                   <button
                     key={child._id}
                     onMouseEnter={() => handleChildHover(child._id)}
-                    onClick={() => handleCategoryClick(child._id)}
+                    onClick={() => handleCategoryClick(child.slug)}
                     className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${
                       activeChild === child._id
                         ? "bg-gray-100 text-gray-900"
@@ -502,7 +506,7 @@ const Navbar = () => {
                 activeChildChildren.map((subChild) => (
                   <button
                     key={subChild._id}
-                    onClick={() => handleCategoryClick(subChild._id)}
+                    onClick={() => handleCategoryClick(subChild.slug)}
                     className="w-full text-left px-4 py-3 rounded-lg text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all duration-200"
                   >
                     <span className="font-medium">{subChild.name}</span>

@@ -24,12 +24,13 @@ import {
   ZoomIn,
 } from "lucide-react";
 import {
-  useGetProductByIdQuery,
+  useGetProductBySlugQuery,
   useGetProductsQuery,
 } from "@/store/slices/productsSlice";
 import {
   useAddToCartMutation,
   useGetCartQuery,
+  useUpdateCartItemMutation,
 } from "@/store/slices/cartSlice";
 import type { Product, Variant, ProductAttribute } from "@/types/product";
 import { toast } from "sonner";
@@ -37,7 +38,7 @@ import { toast } from "sonner";
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  const slug = params.slug as string;
 
   // State
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -57,8 +58,12 @@ export default function ProductPage() {
     }
   }, []);
 
-  // Fetch product data using product ID
-  const { data: productData, isLoading, error } = useGetProductByIdQuery(id);
+  // Fetch product data using product slug
+  const {
+    data: productData,
+    isLoading,
+    error,
+  } = useGetProductBySlugQuery(slug);
 
   // Fetch related products (same category)
   const { data: relatedData } = useGetProductsQuery(
@@ -74,13 +79,44 @@ export default function ProductPage() {
     }
   );
 
-  // Cart data
+  // Cart data and mutations
   const { data: cartData } = useGetCartQuery(undefined, {
     skip: !isLoggedIn,
   });
   const [addToCart] = useAddToCartMutation();
+  const [updateCartItem] = useUpdateCartItemMutation();
 
   const product = productData?.product;
+
+  // Find cart item for this product (considering variant)
+  const cartItem = useMemo(() => {
+    if (!cartData?.items || !product) return null;
+    return cartData.items.find((item: any) => {
+      const itemProductId =
+        typeof item.product === "string" ? item.product : item.product?._id;
+      const itemVariantId = item.variant
+        ? typeof item.variant === "string"
+          ? item.variant
+          : item.variant?._id
+        : null;
+      const currentVariantId = selectedVariant?._id || null;
+      return (
+        itemProductId === product._id && itemVariantId === currentVariantId
+      );
+    });
+  }, [cartData, product, selectedVariant]);
+
+  // Sync quantity from cart when product is in cart
+  useEffect(() => {
+    if (cartItem) {
+      setQuantity(cartItem.quantity);
+    } else {
+      setQuantity(1);
+    }
+  }, [cartItem]);
+
+  // Check if product is in cart
+  const isProductInCart = !!cartItem;
 
   // Filter related products to exclude current product
   const relatedProducts = useMemo(() => {
@@ -105,16 +141,6 @@ export default function ProductPage() {
       stock: product?.stock || 0,
     };
   }, [selectedVariant, product]);
-
-  // Check if product is in cart
-  const isProductInCart = useMemo(() => {
-    if (!cartData?.items || !product) return false;
-    return cartData.items.some((item: any) => {
-      const itemProductId =
-        typeof item.product === "string" ? item.product : item.product?._id;
-      return itemProductId === product._id;
-    });
-  }, [cartData, product]);
 
   // Get primary image or first image
   const getProductImage = (prod: Product, index: number = 0) => {
@@ -188,6 +214,31 @@ export default function ProductPage() {
       );
     } finally {
       setIsAddingToCart(false);
+    }
+  };
+
+  // Handle quantity change - instant update with cart sync
+  const handleQuantityChange = async (newQuantity: number) => {
+    if (!product) return;
+
+    // Update local state instantly
+    setQuantity(newQuantity);
+
+    // If product is in cart, sync to API
+    if (isProductInCart) {
+      try {
+        await updateCartItem({
+          product: product._id,
+          variant: selectedVariant?._id || null,
+          quantity: newQuantity,
+        }).unwrap();
+      } catch (error: any) {
+        console.error("Failed to update cart:", error);
+        // Revert on error
+        if (cartItem) {
+          setQuantity(cartItem.quantity);
+        }
+      }
     }
   };
 
@@ -450,7 +501,9 @@ export default function ProductPage() {
                 {/* Quantity Selector */}
                 <div className="flex items-center border border-gray-300 rounded-lg">
                   <button
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    onClick={() =>
+                      handleQuantityChange(Math.max(1, quantity - 1))
+                    }
                     disabled={quantity <= 1}
                     className="px-4 py-3 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
@@ -461,7 +514,9 @@ export default function ProductPage() {
                   </span>
                   <button
                     onClick={() =>
-                      setQuantity((q) => Math.min(activePrice.stock, q + 1))
+                      handleQuantityChange(
+                        Math.min(activePrice.stock, quantity + 1)
+                      )
                     }
                     disabled={quantity >= activePrice.stock}
                     className="px-4 py-3 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
@@ -622,7 +677,7 @@ export default function ProductPage() {
             {relatedProducts.map((relatedProduct) => (
               <Link
                 key={relatedProduct._id}
-                href={`/shop/${relatedProduct._id}`}
+                href={`/shop/${relatedProduct.slug}`}
               >
                 <Card className="group overflow-hidden border border-gray-100 hover:border-gray-300 bg-white shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer py-0!">
                   <div className="relative overflow-hidden aspect-square">

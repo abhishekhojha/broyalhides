@@ -51,11 +51,9 @@ export default function Filter({
   // Fetch categories from API
   const { data: categoriesData } = useGetCategoriesQuery();
 
-  // Get only active parent categories for filter
-  const categories =
-    categoriesData?.categories?.filter(
-      (cat) => cat.status === "active" && !cat.parent
-    ) || [];
+  // Get all active categories
+  const allCategories =
+    categoriesData?.categories?.filter((cat) => cat.status === "active") || [];
 
   // Sync draft filters when parent filters change
   useEffect(() => {
@@ -71,11 +69,11 @@ export default function Filter({
     setDraftFilters((prev) => ({ ...prev, search: value }));
   };
 
-  // Update draft category
-  const handleCategoryChange = (categoryId: string) => {
+  // Update draft category (use slug instead of _id)
+  const handleCategoryChange = (categorySlug: string) => {
     setDraftFilters((prev) => ({
       ...prev,
-      category: prev.category === categoryId ? "" : categoryId,
+      category: prev.category === categorySlug ? "" : categorySlug,
     }));
   };
 
@@ -100,7 +98,7 @@ export default function Filter({
     onApply();
   };
 
-  // Clear all filters
+  // Clear all filters and show all products immediately
   const clearFilters = () => {
     const clearedFilters: FilterState = {
       search: "",
@@ -112,6 +110,7 @@ export default function Filter({
     setDraftFilters(clearedFilters);
     setPriceRange([MIN_PRICE, MAX_PRICE]);
     onFiltersChange(clearedFilters);
+    onApply(); // Close the sheet and apply
   };
 
   // Format price for display
@@ -204,25 +203,54 @@ export default function Filter({
 
             {/* Category Filter */}
             <div>
-              <h4 className="font-semibold mb-4 text-gray-800 text-lg">
-                Category
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="font-semibold text-gray-800 text-lg">
+                  Category
+                </h4>
+                <span className="text-xs text-gray-500">
+                  {allCategories.length} categories
+                </span>
+              </div>
+
+              {/* Scrollable Category List */}
+              <div className="max-h-[240px] overflow-y-auto pr-1 space-y-1.5">
+                {/* All Categories Option */}
+                <button
+                  onClick={() => handleCategoryChange("")}
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-between ${
+                    draftFilters.category === ""
+                      ? "bg-black text-white"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  <span>All Categories</span>
+                  {draftFilters.category === "" && (
+                    <span className="w-2 h-2 bg-white rounded-full"></span>
+                  )}
+                </button>
+
+                {/* All Categories - Flat List */}
+                {allCategories.map((category) => (
                   <button
                     key={category._id}
-                    onClick={() => handleCategoryChange(category._id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      draftFilters.category === category._id
-                        ? "bg-black text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    onClick={() => handleCategoryChange(category.slug)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all flex items-center justify-between ${
+                      draftFilters.category === category.slug
+                        ? "bg-black text-white font-medium"
+                        : "bg-gray-50 text-gray-700 hover:bg-gray-100"
                     }`}
                   >
-                    {category.name}
+                    <span className="truncate">{category.name}</span>
+                    {draftFilters.category === category.slug && (
+                      <span className="w-2 h-2 bg-white rounded-full flex-shrink-0 ml-2"></span>
+                    )}
                   </button>
                 ))}
-                {categories.length === 0 && (
-                  <p className="text-gray-500 text-sm">Loading categories...</p>
+
+                {allCategories.length === 0 && (
+                  <p className="text-gray-500 text-sm py-2">
+                    Loading categories...
+                  </p>
                 )}
               </div>
             </div>

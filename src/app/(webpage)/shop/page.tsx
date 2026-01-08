@@ -17,6 +17,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Filter, { FilterState } from "./components/Filter";
 import { useGetProductsQuery } from "@/store/slices/productsSlice";
+import { useGetCategoryBySlugQuery } from "@/store/slices/categoriesSlice";
 import {
   useAddToCartMutation,
   useGetCartQuery,
@@ -58,10 +59,21 @@ export default function ShopPage() {
     }
   }, []);
 
-  // Build query params for API
+  // Fetch category by slug to get its _id (for filtering products)
+  const { data: categoryData } = useGetCategoryBySlugQuery(filters.category, {
+    skip: !filters.category,
+  });
+
+  // Get the resolved category ID from slug - only use it if we have a category filter
+  const resolvedCategoryId = filters.category
+    ? categoryData?.category?._id
+    : undefined;
+
+  // Build query params for API (use resolved category ID instead of slug)
   const queryParams = {
     ...(filters.search && { search: filters.search }),
-    ...(filters.category && { category: filters.category }),
+    ...(filters.category &&
+      resolvedCategoryId && { category: resolvedCategoryId }),
     ...(filters.brand && { brand: filters.brand }),
     ...(filters.minPrice !== undefined && { minPrice: filters.minPrice }),
     ...(filters.maxPrice !== undefined && { maxPrice: filters.maxPrice }),
@@ -70,7 +82,19 @@ export default function ShopPage() {
   };
 
   // Fetch products from backend using Redux
-  const { data, isLoading, error } = useGetProductsQuery(queryParams);
+  const {
+    data,
+    isLoading: productsLoading,
+    error,
+    refetch,
+  } = useGetProductsQuery(queryParams, {
+    // Skip fetching products if we have a category filter but haven't resolved the ID yet
+    skip: !!filters.category && !resolvedCategoryId,
+  });
+
+  // Combined loading state
+  const isLoading =
+    productsLoading || (!!filters.category && !resolvedCategoryId);
 
   // Fetch cart data to check if items are already in cart
   const { data: cartData } = useGetCartQuery(undefined, {
@@ -80,16 +104,17 @@ export default function ShopPage() {
   // Add to cart mutation
   const [addToCart] = useAddToCartMutation();
 
-  // Handle filter changes
+  // Handle filter changes - refetch to ensure fresh data
   const handleFiltersChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
     setPage(1); // Reset to first page when filters change
   }, []);
 
-  // Handle filter apply (close sheet callback)
+  // Handle filter apply - trigger refetch for fresh data
   const handleFilterApply = useCallback(() => {
-    // Filters already applied via handleFiltersChange
-  }, []);
+    // Force refetch to get fresh products with new filters
+    refetch();
+  }, [refetch]);
 
   // Check if product is already in cart
   const isProductInCart = (productId: string) => {
@@ -232,7 +257,7 @@ export default function ShopPage() {
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {data.products.map((product) => (
-                <Link key={product._id} href={`/shop/${product._id}`}>
+                <Link key={product._id} href={`/shop/${product.slug}`}>
                   <Card className="group relative overflow-hidden border border-gray-100 hover:border-gray-300 bg-white shadow-sm hover:shadow-xl transition-all duration-500 rounded-lg py-0! cursor-pointer">
                     {/* Product Image */}
                     <div className="relative overflow-hidden">

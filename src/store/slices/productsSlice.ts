@@ -54,6 +54,13 @@ export const productsApi = createApi({
       providesTags: (result, error, id) => [{ type: "Product", id }],
     }),
 
+    // GET product by slug
+    getProductBySlug: builder.query<{ product: Product }, string>({
+      query: (slug) => `/slug/${slug}`,
+      providesTags: (result) =>
+        result ? [{ type: "Product", id: result.product._id }] : [],
+    }),
+
     // CREATE product (protected - requires MANAGE_PRODUCTS permission)
     createProduct: builder.mutation<{ product: Product }, CreateProductRequest>(
       {
@@ -164,6 +171,7 @@ export const productsApi = createApi({
 export const {
   useGetProductsQuery,
   useGetProductByIdQuery,
+  useGetProductBySlugQuery,
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
