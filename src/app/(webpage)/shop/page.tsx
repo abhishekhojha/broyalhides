@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import {
 import type { Product } from "@/types/product";
 import { toast } from "sonner";
 
-export default function ShopPage() {
+function ShopContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -494,5 +494,23 @@ export default function ShopPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+// Wrap in Suspense to handle useSearchParams() during static generation
+export default function ShopPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-gradient-to-br from-white via-gray-50 to-gray-100 text-gray-900 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-gray-500 mx-auto mb-4" />
+            <p className="text-gray-600">Loading shop...</p>
+          </div>
+        </main>
+      }
+    >
+      <ShopContent />
+    </Suspense>
   );
 }
