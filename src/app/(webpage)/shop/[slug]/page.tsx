@@ -609,27 +609,30 @@ export default function ProductPage() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">
                   Description
                 </h2>
-                <div className="prose prose-gray max-w-none">
-                  <p
-                    className={`text-gray-600 leading-relaxed ${
+                <div
+                  className={`prose prose-gray max-w-none 
+                    prose-ul:list-disc prose-ul:ml-6 prose-ul:space-y-2
+                    prose-li:text-gray-600 prose-li:leading-relaxed
+                    prose-strong:text-gray-900 prose-strong:font-semibold
+                    prose-p:text-gray-600 prose-p:leading-relaxed
+                    [&_ul]:!list-disc [&_ul]:!ml-6 [&_ul]:!pl-0 [&_ul]:!space-y-2
+                    [&_li]:!text-gray-600 [&_li]:!leading-relaxed [&_li]:!m-0 [&_li]:!p-0
+                    [&_*]:!font-[inherit] [&_*]:!text-base [&_*]:!bg-transparent
+                    ${
                       !showFullDescription && product.description.length > 500
-                        ? "line-clamp-6"
+                        ? "max-h-48 overflow-hidden relative after:absolute after:bottom-0 after:left-0 after:right-0 after:h-16 after:bg-gradient-to-t after:from-white after:to-transparent"
                         : ""
                     }`}
+                  dangerouslySetInnerHTML={{ __html: product.description }}
+                />
+                {product.description.length > 500 && (
+                  <button
+                    onClick={() => setShowFullDescription(!showFullDescription)}
+                    className="text-black font-medium mt-4 hover:underline cursor-pointer"
                   >
-                    {product.description}
-                  </p>
-                  {product.description.length > 500 && (
-                    <button
-                      onClick={() =>
-                        setShowFullDescription(!showFullDescription)
-                      }
-                      className="text-black font-medium mt-2 hover:underline cursor-pointer"
-                    >
-                      {showFullDescription ? "Show Less" : "Read More"}
-                    </button>
-                  )}
-                </div>
+                    {showFullDescription ? "Show Less" : "Read More"}
+                  </button>
+                )}
               </div>
             )}
 

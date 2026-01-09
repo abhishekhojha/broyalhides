@@ -32,25 +32,25 @@ const categories = [
     image: "https://images.unsplash.com/photo-1521223890158-f9f7c3d5d504?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=760",
     title: "Jackets",
     cta: "Shop Now",
-    href: "/shop/jackets",
+    href: "/shop?category=jackets",
   },
   {
     image: "/images/fshoes.png",
     title: "Shoes",
     cta: "Shop Now",
-    href: "/shop/shoes",
+    href: "/shop?category=shoes",
   },
   {
     image: "https://images.unsplash.com/photo-1760624294514-ca40aafe3d96?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=930",
     title: "Bags",
     cta: "Shop Now",
-    href: "/shop/bags",
+    href: "/shop?category=bags",
   },
   {
     image: "https://images.unsplash.com/photo-1599066852653-42826a50b163?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&q=80&w=952",
     title: "Accessories",
     cta: "Shop Now",
-    href: "/shop/accessories",
+    href: "/shop?category=accessories",
   },
 ];
 

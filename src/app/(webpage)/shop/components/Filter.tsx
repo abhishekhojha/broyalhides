@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
-import { FilterIcon, Search, X } from "lucide-react";
+import { FilterIcon, X } from "lucide-react";
 import { useGetCategoriesQuery } from "@/store/slices/categoriesSlice";
 
 // Filter state interface
@@ -118,7 +118,6 @@ export default function Filter({
 
   // Check if any filters are active
   const hasActiveFilters =
-    filters.search ||
     filters.category ||
     filters.brand ||
     filters.minPrice !== undefined ||
@@ -165,23 +164,6 @@ export default function Filter({
 
         <ScrollArea className="h-full flex-1 p-6">
           <div className="space-y-8">
-            {/* Search Input */}
-            <div>
-              <h4 className="font-semibold mb-3 text-gray-800 text-lg">
-                Search
-              </h4>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <Input
-                  type="text"
-                  placeholder="Search products..."
-                  value={draftFilters.search}
-                  onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-10 bg-white border-gray-200 focus:border-black focus:ring-black"
-                />
-              </div>
-            </div>
-
             {/* Price Range Filter */}
             <div>
               <h4 className="font-semibold mb-4 text-gray-800 text-lg">

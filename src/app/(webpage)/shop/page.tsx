@@ -12,12 +12,13 @@ import {
   Plus,
   Loader2,
   LogIn,
+  Search,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Filter, { FilterState } from "./components/Filter";
 import { useGetProductsQuery } from "@/store/slices/productsSlice";
-import { useGetCategoryBySlugQuery } from "@/store/slices/categoriesSlice";
 import {
   useAddToCartMutation,
   useGetCartQuery,
@@ -33,6 +34,10 @@ function ShopContent() {
   const [addingToCart, setAddingToCart] = useState<string | null>(null);
   const [page, setPage] = useState(1);
 
+  // Separate state for search input (immediate) and debounced search (for API)
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   // Initialize filters from URL params (for mega menu category links)
   const [filters, setFilters] = useState<FilterState>({
     search: "",
@@ -42,10 +47,21 @@ function ShopContent() {
     maxPrice: undefined,
   });
 
+  // Debounce search input - only update debouncedSearch after 500ms of no typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+      setPage(1); // Reset to first page on new search
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
   // Update filters when URL params change (mega menu navigation)
   useEffect(() => {
-    const categoryFromUrl = searchParams.get("category");
-    if (categoryFromUrl && categoryFromUrl !== filters.category) {
+    const categoryFromUrl = searchParams.get("category") || "";
+    // Sync category filter with URL - handles add, change, and clear
+    if (categoryFromUrl !== filters.category) {
       setFilters((prev) => ({ ...prev, category: categoryFromUrl }));
       setPage(1);
     }
@@ -59,21 +75,15 @@ function ShopContent() {
     }
   }, []);
 
-  // Fetch category by slug to get its _id (for filtering products)
-  const { data: categoryData } = useGetCategoryBySlugQuery(filters.category, {
-    skip: !filters.category,
-  });
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [page]);
 
-  // Get the resolved category ID from slug - only use it if we have a category filter
-  const resolvedCategoryId = filters.category
-    ? categoryData?.category?._id
-    : undefined;
-
-  // Build query params for API (use resolved category ID instead of slug)
+  // Build query params for API (use debouncedSearch for API calls)
   const queryParams = {
-    ...(filters.search && { search: filters.search }),
-    ...(filters.category &&
-      resolvedCategoryId && { category: resolvedCategoryId }),
+    ...(debouncedSearch && { search: debouncedSearch }),
+    ...(filters.category && { category: filters.category }),
     ...(filters.brand && { brand: filters.brand }),
     ...(filters.minPrice !== undefined && { minPrice: filters.minPrice }),
     ...(filters.maxPrice !== undefined && { maxPrice: filters.maxPrice }),
@@ -82,19 +92,7 @@ function ShopContent() {
   };
 
   // Fetch products from backend using Redux
-  const {
-    data,
-    isLoading: productsLoading,
-    error,
-    refetch,
-  } = useGetProductsQuery(queryParams, {
-    // Skip fetching products if we have a category filter but haven't resolved the ID yet
-    skip: !!filters.category && !resolvedCategoryId,
-  });
-
-  // Combined loading state
-  const isLoading =
-    productsLoading || (!!filters.category && !resolvedCategoryId);
+  const { data, isLoading, error, refetch } = useGetProductsQuery(queryParams);
 
   // Fetch cart data to check if items are already in cart
   const { data: cartData } = useGetCartQuery(undefined, {
@@ -175,7 +173,7 @@ function ShopContent() {
 
   // Check if any filters are active
   const hasActiveFilters =
-    filters.search ||
+    debouncedSearch ||
     filters.category ||
     filters.brand ||
     filters.minPrice !== undefined ||
@@ -199,13 +197,25 @@ function ShopContent() {
 
       {/* Shop Section */}
       <section className="max-w-6xl mx-auto px-6 py-16">
-        <div className="flex items-center justify-between mb-12">
-          <div>
-            <h2 className="text-3xl font-bold">Featured Collection</h2>
-            <p className="text-gray-500 mt-1">
-              {data ? `${data.total} products found` : "Loading products..."}
-              {hasActiveFilters && " (filtered)"}
-            </p>
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold">Featured Collection</h2>
+          <p className="text-gray-500 mt-1">
+            {data ? `${data.total} products found` : "Loading products..."}
+            {hasActiveFilters && " (filtered)"}
+          </p>
+        </div>
+
+        {/* Search Bar with Filter */}
+        <div className="mb-8 flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Search products..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-12 py-6 bg-white border-gray-200 focus:border-black focus:ring-black rounded-xl shadow-sm text-base"
+            />
           </div>
           <Filter
             filters={filters}

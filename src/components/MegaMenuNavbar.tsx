@@ -43,7 +43,8 @@ const Navbar = () => {
   const [activeChild, setActiveChild] = useState<string | null>(null);
   const megaMenuTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const navItems = ["Shop", "About", "Contact"];
+  // Static nav items (non-category pages)
+  const staticNavItems = ["About", "Contact"];
 
   // Check if user is logged in
   useEffect(() => {
@@ -196,39 +197,62 @@ const Navbar = () => {
 
             {/* Navigation Items (Desktop) */}
             <div className="hidden md:flex items-center space-x-8">
-              {navItems.map((item) =>
-                item === "Shop" ? (
-                  <div
-                    key={item}
-                    className="relative"
-                    onMouseEnter={handleMegaMenuEnter}
-                    onMouseLeave={handleMegaMenuLeave}
+              {/* Shop link - shows all products */}
+              <div
+                className="relative"
+                onMouseEnter={handleMegaMenuEnter}
+                onMouseLeave={handleMegaMenuLeave}
+              >
+                <button
+                  onClick={() => {
+                    setIsMegaMenuOpen(false);
+                    router.push("/shop");
+                  }}
+                  className={`text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-md font-semibold py-2 cursor-pointer ${
+                    isMegaMenuOpen ? "text-navbar-text-hover" : ""
+                  }`}
+                >
+                  Shop
+                </button>
+              </div>
+
+              {/* Dynamic parent categories from API */}
+              {categoryHierarchy.map((category) => (
+                <div
+                  key={category._id}
+                  className="relative"
+                  onMouseEnter={() => {
+                    handleMegaMenuEnter();
+                    setActiveParent(category._id);
+                  }}
+                  onMouseLeave={handleMegaMenuLeave}
+                >
+                  <button
+                    onClick={() => handleCategoryClick(category.slug)}
+                    className={`text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-md font-semibold py-2 cursor-pointer ${
+                      isMegaMenuOpen && activeParent === category._id
+                        ? "text-navbar-text-hover"
+                        : ""
+                    }`}
                   >
-                    <button
-                      onClick={() => {
-                        setIsMegaMenuOpen(false);
-                        router.push("/shop");
-                      }}
-                      className={`text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-md font-semibold py-2 cursor-pointer ${
-                        isMegaMenuOpen ? "text-navbar-text-hover" : ""
-                      }`}
-                    >
-                      {item}
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    key={item}
-                    href={`/${item
-                      .toLowerCase()
-                      .replace(/ & /g, "-")
-                      .replace(/ /g, "-")}`}
-                    className="text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-md font-semibold"
-                  >
-                    {item}
-                  </Link>
-                )
-              )}
+                    {category.name}
+                  </button>
+                </div>
+              ))}
+
+              {/* Static nav items (About, Contact) */}
+              {staticNavItems.map((item) => (
+                <Link
+                  key={item}
+                  href={`/${item
+                    .toLowerCase()
+                    .replace(/ & /g, "-")
+                    .replace(/ /g, "-")}`}
+                  className="text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-md font-semibold"
+                >
+                  {item}
+                </Link>
+              ))}
             </div>
 
             {/* Utility Icons */}
@@ -328,7 +352,29 @@ const Navbar = () => {
           {/* Mobile Menu */}
           {menuOpen && (
             <div className="md:hidden flex flex-col space-y-2 py-4 animate-in fade-in slide-in-from-top-2">
-              {navItems.map((item) => (
+              {/* Shop All link */}
+              <Link
+                href="/shop"
+                className="text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-xl font-semibold py-2"
+                onClick={() => setMenuOpen(false)}
+              >
+                Shop All
+              </Link>
+
+              {/* Dynamic parent categories from API */}
+              {categoryHierarchy.map((category) => (
+                <Link
+                  key={category._id}
+                  href={`/shop?category=${category.slug}`}
+                  className="text-navbar-text hover:text-navbar-text-hover transition-colors duration-200 text-xl font-semibold py-2 pl-4"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {category.name}
+                </Link>
+              ))}
+
+              {/* Static nav items (About, Contact) */}
+              {staticNavItems.map((item) => (
                 <Link
                   key={item}
                   href={`/${item
